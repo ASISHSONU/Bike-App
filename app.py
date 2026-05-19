@@ -7,18 +7,18 @@ import joblib
 import plotly.express as px
 import plotly.graph_objects as go
 
-# =========================================
+# =====================================================
 # PAGE CONFIG
-# =========================================
+# =====================================================
 st.set_page_config(
     page_title="Bike Demand Prediction System",
     page_icon="🚲",
     layout="wide"
 )
 
-# =========================================
+# =====================================================
 # CUSTOM CSS
-# =========================================
+# =====================================================
 st.markdown("""
 <style>
 
@@ -57,7 +57,7 @@ h1, h2, h3 {
 }
 
 .big-title {
-    font-size: 52px;
+    font-size: 50px;
     font-weight: 800;
     color: white;
 }
@@ -88,20 +88,20 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# =========================================
+# =====================================================
 # LOAD DATA
-# =========================================
+# =====================================================
 df = pd.read_csv("hour.csv")
 
-# =========================================
+# =====================================================
 # LOAD SCALERS
-# =========================================
+# =====================================================
 X_scaler = joblib.load("x_scaler.pkl")
 y_scaler = joblib.load("y_scaler.pkl")
 
-# =========================================
+# =====================================================
 # POSITIONAL ENCODING
-# =========================================
+# =====================================================
 class PositionalEncoding(nn.Module):
 
     def __init__(self, d_model, max_len=500):
@@ -121,15 +121,16 @@ class PositionalEncoding(nn.Module):
 
         pe[:, 1::2] = torch.cos(position * div_term)
 
-        self.pe = pe.unsqueeze(0)
+        self.register_buffer("pe", pe.unsqueeze(0))
 
     def forward(self, x):
 
         return x + self.pe[:, :x.size(1)]
 
-# =========================================
+
+# =====================================================
 # TRANSFORMER MODEL
-# =========================================
+# =====================================================
 class TransformerModel(nn.Module):
 
     def __init__(
@@ -180,11 +181,12 @@ class TransformerModel(nn.Module):
 
         x = self.norm(x)
 
-        return self.fc(x).squeeze()
+        return self.fc(x)
 
-# =========================================
+
+# =====================================================
 # LOAD MODEL
-# =========================================
+# =====================================================
 input_dim = X_scaler.n_features_in_
 
 model = TransformerModel(input_dim)
@@ -192,15 +194,15 @@ model = TransformerModel(input_dim)
 model.load_state_dict(
     torch.load(
         "transformer_model.pth",
-        map_location="cpu"
+        map_location=torch.device("cpu")
     )
 )
 
 model.eval()
 
-# =========================================
+# =====================================================
 # SIDEBAR
-# =========================================
+# =====================================================
 st.sidebar.title("🚲 Bike Demand App")
 
 page = st.sidebar.radio(
@@ -215,9 +217,9 @@ page = st.sidebar.radio(
     ]
 )
 
-# =========================================
+# =====================================================
 # DASHBOARD
-# =========================================
+# =====================================================
 if page == "Dashboard":
 
     st.markdown("""
@@ -238,11 +240,11 @@ if page == "Dashboard":
         st.markdown("""
         <div class="metric-card">
             <div class="metric-title">
-            Dataset Records
+                Dataset Records
             </div>
 
             <div class="metric-value">
-            17K+
+                17K+
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -251,11 +253,11 @@ if page == "Dashboard":
         st.markdown("""
         <div class="metric-card">
             <div class="metric-title">
-            Model Accuracy
+                R² Score
             </div>
 
             <div class="metric-value">
-            92%
+                0.92
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -264,63 +266,60 @@ if page == "Dashboard":
         st.markdown("""
         <div class="metric-card">
             <div class="metric-title">
-            RMSE
+                RMSE
             </div>
 
             <div class="metric-value">
-            60
+                60
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+    st.write("")
+
     st.info("""
-    This application predicts bike rental demand using a Transformer-based deep learning architecture trained on historical and environmental data.
+    This application predicts bike rental demand using Transformer-based deep learning architecture trained on historical and environmental data.
     """)
 
     st.subheader("📌 Features")
 
-    f1, f2 = st.columns(2)
+    c1, c2 = st.columns(2)
 
-    with f1:
+    with c1:
         st.success("📊 Interactive Data Insights")
-        st.success("🔮 Real-Time Demand Prediction")
-        st.success("📈 Model Performance Analysis")
+        st.success("🔮 Smart Demand Prediction")
+        st.success("📈 Performance Visualization")
 
-    with f2:
+    with c2:
         st.success("⚡ Transformer Deep Learning")
         st.success("📂 Dataset Explorer")
         st.success("🌦 Weather-Based Forecasting")
 
-# =========================================
+# =====================================================
 # DATA INSIGHTS
-# =========================================
+# =====================================================
 elif page == "Data Insights":
 
     st.title("📊 Data Insights")
 
-    # HOURLY DEMAND
+    # HOURLY TREND
     st.subheader("⏰ Hourly Bike Rental Demand")
 
-    hourly = df.groupby("hr")["cnt"].mean()
+    hourly = df.groupby("hr")["cnt"].mean().reset_index()
 
-    hourly_df = pd.DataFrame({
-        "Hour": hourly.index,
-        "Average Demand": hourly.values
-    })
-
-    fig = px.line(
-        hourly_df,
-        x="Hour",
-        y="Average Demand",
+    fig1 = px.line(
+        hourly,
+        x="hr",
+        y="cnt",
         markers=True,
         title="Hourly Bike Rental Trend"
     )
 
-    fig.update_layout(template="plotly_dark")
+    fig1.update_layout(template="plotly_dark")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True)
 
-    # SEASONAL DEMAND
+    # SEASONAL ANALYSIS
     st.subheader("🌤 Season-wise Demand")
 
     season_map = {
@@ -330,30 +329,29 @@ elif page == "Data Insights":
         4: "Winter"
     }
 
-    df["season_name"] = df["season"].map(season_map)
+    seasonal = df.copy()
 
-    seasonal = df.groupby("season_name")["cnt"].mean()
+    seasonal["season_name"] = seasonal["season"].map(season_map)
 
-    seasonal_df = pd.DataFrame({
-        "Season": seasonal.index,
-        "Average Demand": seasonal.values
-    })
+    seasonal_avg = seasonal.groupby(
+        "season_name"
+    )["cnt"].mean().reset_index()
 
-    fig = px.bar(
-        seasonal_df,
-        x="Season",
-        y="Average Demand",
-        color="Average Demand",
+    fig2 = px.bar(
+        seasonal_avg,
+        x="season_name",
+        y="cnt",
+        color="cnt",
         title="Season-wise Bike Demand"
     )
 
-    fig.update_layout(template="plotly_dark")
+    fig2.update_layout(template="plotly_dark")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
 
-# =========================================
+# =====================================================
 # PREDICTION PAGE
-# =========================================
+# =====================================================
 elif page == "Prediction":
 
     st.title("🔮 Smart Bike Demand Prediction")
@@ -366,9 +364,9 @@ elif page == "Prediction":
 
     col1, col2 = st.columns([1, 1])
 
-    # =====================================
+    # =================================================
     # INPUTS
-    # =====================================
+    # =================================================
     with col1:
 
         st.subheader("📥 Input Conditions")
@@ -406,32 +404,29 @@ elif page == "Prediction":
 
         predict_btn = st.button("🚀 Predict Demand")
 
-    # =====================================
-    # MAPPINGS
-    # =====================================
-    season_dict = {
-        "Spring": 1,
-        "Summer": 2,
-        "Fall": 3,
-        "Winter": 4
-    }
-
-    weather_dict = {
-        "Clear": 1,
-        "Mist": 2,
-        "Light Rain": 3,
-        "Heavy Rain": 4
-    }
-
-    # =====================================
+    # =================================================
     # PREDICTION
-    # =====================================
+    # =================================================
     if predict_btn:
+
+        season_dict = {
+            "Spring": 1,
+            "Summer": 2,
+            "Fall": 3,
+            "Winter": 4
+        }
+
+        weather_dict = {
+            "Clear": 1,
+            "Mist": 2,
+            "Light Rain": 3,
+            "Heavy Rain": 4
+        }
 
         season = season_dict[season_name]
         weathersit = weather_dict[weather_name]
 
-        # Smart defaults
+        # DEFAULT VALUES
         yr = 1
         mnth = 6
         holiday = 0
@@ -440,12 +435,10 @@ elif page == "Prediction":
 
         temp = temp_c / 50
         atemp = temp
-
         hum = hum_percent / 100
-
         windspeed = 0.20
 
-        # Cyclical Encoding
+        # CYCLICAL FEATURES
         hour_sin = np.sin(2 * np.pi * hour / 24)
         hour_cos = np.cos(2 * np.pi * hour / 24)
 
@@ -488,9 +481,9 @@ elif page == "Prediction":
             pred.reshape(-1, 1)
         )[0][0]
 
-        # =====================================
-        # RESULTS PANEL
-        # =====================================
+        # =================================================
+        # RESULTS
+        # =================================================
         with col2:
 
             st.subheader("📊 Prediction Results")
@@ -510,7 +503,6 @@ elif page == "Prediction":
                 unsafe_allow_html=True
             )
 
-            # DEMAND LEVEL
             if pred_original < 100:
 
                 st.error("⚠️ Low Bike Demand Expected")
@@ -529,12 +521,10 @@ elif page == "Prediction":
 
                 demand_label = "High"
 
-            # =====================================
             # GAUGE CHART
-            # =====================================
             fig = go.Figure(go.Indicator(
                 mode="gauge+number",
-                value=pred_original,
+                value=float(pred_original),
 
                 title={
                     'text': f"Demand Level: {demand_label}"
@@ -552,7 +542,7 @@ elif page == "Prediction":
                     'steps': [
                         {'range': [0, 100], 'color': "#2563EB"},
                         {'range': [100, 250], 'color': "#10B981"},
-                        {'range': [250, 500], 'color': "#F59E0B"},
+                        {'range': [250, 500], 'color': "#F59E0B"}
                     ]
                 }
             ))
@@ -567,7 +557,6 @@ elif page == "Prediction":
                 use_container_width=True
             )
 
-            # SUMMARY
             st.markdown("### 📝 Prediction Summary")
 
             st.write(f"""
@@ -578,9 +567,9 @@ elif page == "Prediction":
             - **Hour:** {hour}:00
             """)
 
-# =========================================
+# =====================================================
 # DATASET EXPLORER
-# =========================================
+# =====================================================
 elif page == "Dataset Explorer":
 
     st.title("📂 Dataset Explorer")
@@ -596,9 +585,9 @@ elif page == "Dataset Explorer":
         height=500
     )
 
-# =========================================
+# =====================================================
 # MODEL PERFORMANCE
-# =========================================
+# =====================================================
 elif page == "Model Performance":
 
     st.title("📈 Transformer Model Performance")
@@ -650,9 +639,9 @@ elif page == "Model Performance":
 
     st.plotly_chart(fig, use_container_width=True)
 
-# =========================================
+# =====================================================
 # ABOUT
-# =========================================
+# =====================================================
 elif page == "About":
 
     st.title("ℹ️ About Project")
