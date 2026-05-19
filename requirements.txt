@@ -5,3 +5,5 @@ numpy
 scikit-learn
 joblib
 matplotlib
+plotly
+protobuf==3.20.*
