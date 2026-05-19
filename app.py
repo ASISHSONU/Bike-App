@@ -534,10 +534,10 @@ elif page == "Prediction":
              </div>
              """
 
-           st.markdown(
-            card_html,
-            unsafe_allow_html=True
-           )
+             st.markdown(
+              card_html,
+              unsafe_allow_html=True
+             )
 
             st.write("")
 
