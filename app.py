@@ -511,113 +511,126 @@ elif page == "Prediction":
         )[0][0]
 
         # =====================================
-        # RESULTS PANEL
-        # =====================================
-        with col2:
+# RESULTS PANEL
+# =====================================
+with col2:
 
-            st.subheader("📊 Prediction Results")
+    st.subheader("📊 Prediction Results")
 
-            # Result Card
-            card_html = f"""
-            <div class="metric-card">
-            <div class="metric-title">
-              Predicted Bike Demand
+    # =====================================
+    # RESULT CARD
+    # =====================================
+    card_html = f"""
+    <div class="metric-card">
+        <div class="metric-title">
+            Predicted Bike Demand
+        </div>
+
+        <div class="metric-value">
+            {int(pred_original)}
+        </div>
     </div>
+    """
 
-    <div class="metric-value">
-        {int(pred_original)}
-    </div>
-</div>
-"""
+    st.markdown(card_html, unsafe_allow_html=True)
 
-st.markdown(card_html, unsafe_allow_html=True)
+    st.write("")
 
-            # Demand Category
-            if pred_original < 100:
+    # =====================================
+    # DEMAND CATEGORY
+    # =====================================
+    if pred_original < 100:
 
-                st.error("⚠️ Low Bike Demand Expected")
+        st.error("⚠️ Low Bike Demand Expected")
 
-                st.info("""
-                Fewer bikes may be required during this period.
-                """)
+        st.info(
+            "Fewer bikes may be required during this period."
+        )
 
-                demand_label = "Low"
+        demand_label = "Low"
 
-            elif pred_original < 250:
+        recommendation = "Low rental activity expected."
 
-                st.warning("🚲 Moderate Bike Demand Expected")
+    elif pred_original < 250:
 
-                st.info("""
-                Average rental activity expected.
-                """)
+        st.warning("🚲 Moderate Bike Demand Expected")
 
-                demand_label = "Moderate"
+        st.info(
+            "Average rental activity expected."
+        )
 
-            else:
+        demand_label = "Moderate"
 
-                st.success("✅ High Bike Demand Expected")
+        recommendation = "Maintain regular bike availability."
 
-                st.info("""
-                High bike availability should be maintained.
-                """)
+    else:
 
-                demand_label = "High"
+        st.success("✅ High Bike Demand Expected")
 
-            # =====================================
-            # GAUGE CHART
-            # =====================================
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=pred_original,
+        st.info(
+            "High bike availability should be maintained."
+        )
 
-                title={
-                    'text': f"Demand Level: {demand_label}"
-                },
+        demand_label = "High"
 
-                gauge={
-                    'axis': {
-                        'range': [0, 500]
-                    },
+        recommendation = "Increase bike allocation for this period."
 
-                    'bar': {
-                        'color': "#60A5FA"
-                    },
+    # =====================================
+    # GAUGE CHART
+    # =====================================
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=float(pred_original),
 
-                    'steps': [
-                        {'range': [0, 100], 'color': "#3B82F6"},
-                        {'range': [100, 250], 'color': "#10B981"},
-                        {'range': [250, 500], 'color': "#F59E0B"},
-                    ]
-                }
-            ))
+        title={
+            "text": f"Demand Level: {demand_label}"
+        },
 
-            fig.update_layout(
-                height=350,
-                margin=dict(
-                    l=20,
-                    r=20,
-                    t=60,
-                    b=20
-                )
-            )
+        gauge={
 
-            st.plotly_chart(
-                fig,
-                use_container_width=True
-            )
+            "axis": {
+                "range": [0, 500]
+            },
 
-            # =====================================
-            # SUMMARY
-            # =====================================
-            st.markdown("### 📝 Prediction Summary")
+            "bar": {
+                "color": "#60A5FA"
+            },
 
-            st.write(f"""
-            - **Season:** {season_name}
-            - **Weather:** {weather_name}
-            - **Temperature:** {temp_c}°C
-            - **Humidity:** {hum_percent}%
-            - **Hour:** {hour}:00
-            """)
+            "steps": [
+                {"range": [0, 100], "color": "#2563EB"},
+                {"range": [100, 250], "color": "#10B981"},
+                {"range": [250, 500], "color": "#F59E0B"}
+            ]
+        }
+    ))
+
+    fig.update_layout(
+        template="plotly_dark",
+        height=350,
+        margin=dict(
+            l=20,
+            r=20,
+            t=60,
+            b=20
+        )
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+    # =====================================
+    # SUMMARY
+    # =====================================
+    st.markdown("### 📝 Prediction Summary")
+
+    st.write(f"""
+    - **Predicted Demand:** {int(pred_original)}
+    - **Demand Level:** {demand_label}
+    - **Recommendation:** {recommendation}
+    """)
+       
 
 # =========================================
 # DATASET EXPLORER
