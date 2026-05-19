@@ -518,19 +518,19 @@ elif page == "Prediction":
             st.subheader("📊 Prediction Results")
 
             # Result Card
-            st.markdown(f"""
-            <div class='metric-card'>
-                <div class='metric-title'>
-                Predicted Bike Demand
-                </div>
+            card_html = f"""
+            <div class="metric-card">
+            <div class="metric-title">
+              Predicted Bike Demand
+    </div>
 
-                <div class='metric-value'>
-                {pred_original:.0f}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    <div class="metric-value">
+        {int(pred_original)}
+    </div>
+</div>
+"""
 
-            st.write("")
+st.markdown(card_html, unsafe_allow_html=True)
 
             # Demand Category
             if pred_original < 100:
