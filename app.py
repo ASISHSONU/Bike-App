@@ -368,11 +368,60 @@ elif page == "Data Insights":
 # =========================================
 elif page == "Prediction":
 
-    st.title("🔮 Predict Bike Demand")
+    st.title("🔮 Smart Bike Demand Prediction")
 
-    # ---------------------------------
+    st.markdown("""
+    Predict bike rental demand using weather and time conditions.
+    """)
+
+    st.write("")
+
+    # =====================================
+    # LAYOUT
+    # =====================================
+    col1, col2 = st.columns([1,1])
+
+    # =====================================
+    # USER INPUTS
+    # =====================================
+    with col1:
+
+        st.subheader("📥 Input Conditions")
+
+        season_name = st.selectbox(
+            "🌤 Season",
+            ["Spring", "Summer", "Fall", "Winter"]
+        )
+
+        weather_name = st.selectbox(
+            "🌦 Weather",
+            ["Clear", "Mist", "Light Rain", "Heavy Rain"]
+        )
+
+        temp_c = st.slider(
+            "🌡 Temperature (°C)",
+            0,
+            45,
+            25
+        )
+
+        hour = st.slider(
+            "⏰ Hour of Day",
+            0,
+            23,
+            12
+        )
+
+        hum_percent = st.slider(
+            "💧 Humidity (%)",
+            0,
+            100,
+            50
+        )
+
+    # =====================================
     # MAPPINGS
-    # ---------------------------------
+    # =====================================
     season_dict = {
         "Spring":1,
         "Summer":2,
@@ -383,125 +432,47 @@ elif page == "Prediction":
     weather_dict = {
         "Clear":1,
         "Mist":2,
-        "Light Rain/Snow":3,
+        "Light Rain":3,
         "Heavy Rain":4
     }
 
-    year_dict = {
-        "2011":0,
-        "2012":1
-    }
+    # =====================================
+    # AUTO GENERATED FEATURES
+    # =====================================
+    season = season_dict[season_name]
+    weathersit = weather_dict[weather_name]
 
-    binary_dict = {
-        "No":0,
-        "Yes":1
-    }
+    # Auto-filled smart defaults
+    yr = 1
+    mnth = 6
+    holiday = 0
+    workingday = 1
+    weekday = 3
 
-    # ---------------------------------
-    # INPUTS
-    # ---------------------------------
-    col1, col2 = st.columns(2)
+    temp = temp_c / 50
+    atemp = temp
 
+    hum = hum_percent / 100
+
+    windspeed = 0.20
+
+    # =====================================
+    # CYCLICAL FEATURES
+    # =====================================
+    hour_sin = np.sin(2*np.pi*hour/24)
+    hour_cos = np.cos(2*np.pi*hour/24)
+
+    weekday_sin = np.sin(2*np.pi*weekday/7)
+    weekday_cos = np.cos(2*np.pi*weekday/7)
+
+    # =====================================
+    # PREDICTION
+    # =====================================
     with col1:
 
-        season = season_dict[
-            st.selectbox(
-                "Season",
-                list(season_dict.keys())
-            )
-        ]
+        predict_btn = st.button("🚀 Predict Demand")
 
-        yr = year_dict[
-            st.selectbox(
-                "Year",
-                list(year_dict.keys())
-            )
-        ]
-
-        mnth = st.slider(
-            "Month",
-            1,
-            12,
-            6
-        )
-
-        holiday = binary_dict[
-            st.selectbox(
-                "Holiday",
-                list(binary_dict.keys())
-            )
-        ]
-
-        workingday = binary_dict[
-            st.selectbox(
-                "Working Day",
-                list(binary_dict.keys())
-            )
-        ]
-
-        weathersit = weather_dict[
-            st.selectbox(
-                "Weather Condition",
-                list(weather_dict.keys())
-            )
-        ]
-
-    with col2:
-
-        temp_c = st.slider(
-            "Temperature (°C)",
-            0,
-            50,
-            25
-        )
-
-        hum_percent = st.slider(
-            "Humidity (%)",
-            0,
-            100,
-            50
-        )
-
-        wind_kmh = st.slider(
-            "Windspeed (km/h)",
-            0,
-            50,
-            10
-        )
-
-        hour = st.slider(
-            "Hour",
-            0,
-            23,
-            12
-        )
-
-        weekday = st.slider(
-            "Weekday",
-            0,
-            6,
-            3
-        )
-
-    # =================================
-    # PREDICTION BUTTON
-    # =================================
-    if st.button("🚀 Predict Demand"):
-
-        temp = temp_c / 50
-
-        atemp = temp
-
-        hum = hum_percent / 100
-
-        windspeed = wind_kmh / 50
-
-        # cyclical encoding
-        hour_sin = np.sin(2*np.pi*hour/24)
-        hour_cos = np.cos(2*np.pi*hour/24)
-
-        weekday_sin = np.sin(2*np.pi*weekday/7)
-        weekday_cos = np.cos(2*np.pi*weekday/7)
+    if predict_btn:
 
         features = np.array([[
             season,
@@ -539,50 +510,114 @@ elif page == "Prediction":
             pred.reshape(-1,1)
         )[0][0]
 
-        # =============================
-        # RESULT CARD
-        # =============================
-        st.markdown(f"""
-        <div class='metric-card'>
-            <div class='metric-title'>
-            Predicted Bike Demand
+        # =====================================
+        # RESULTS PANEL
+        # =====================================
+        with col2:
+
+            st.subheader("📊 Prediction Results")
+
+            # Result Card
+            st.markdown(f"""
+            <div class='metric-card'>
+                <div class='metric-title'>
+                Predicted Bike Demand
+                </div>
+
+                <div class='metric-value'>
+                {pred_original:.0f}
+                </div>
             </div>
+            """, unsafe_allow_html=True)
 
-            <div class='metric-value'>
-            {pred_original:.0f}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            st.write("")
 
-        # =============================
-        # DEMAND LEVEL
-        # =============================
-        if pred_original < 100:
+            # Demand Category
+            if pred_original < 100:
 
-            st.error("⚠️ Low Bike Demand Expected")
+                st.error("⚠️ Low Bike Demand Expected")
 
-        elif pred_original < 250:
+                st.info("""
+                Fewer bikes may be required during this period.
+                """)
 
-            st.warning("🚲 Moderate Bike Demand Expected")
+                demand_label = "Low"
 
-        else:
+            elif pred_original < 250:
 
-            st.success("✅ High Bike Demand Expected")
+                st.warning("🚲 Moderate Bike Demand Expected")
 
-        # =============================
-        # GAUGE CHART
-        # =============================
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=pred_original,
-            title={'text': "Predicted Demand"},
-            gauge={
-                'axis': {'range': [0, 500]},
-                'bar': {'color': "#60A5FA"}
-            }
-        ))
+                st.info("""
+                Average rental activity expected.
+                """)
 
-        st.plotly_chart(fig, use_container_width=True)
+                demand_label = "Moderate"
+
+            else:
+
+                st.success("✅ High Bike Demand Expected")
+
+                st.info("""
+                High bike availability should be maintained.
+                """)
+
+                demand_label = "High"
+
+            # =====================================
+            # GAUGE CHART
+            # =====================================
+            fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=pred_original,
+
+                title={
+                    'text': f"Demand Level: {demand_label}"
+                },
+
+                gauge={
+                    'axis': {
+                        'range': [0, 500]
+                    },
+
+                    'bar': {
+                        'color': "#60A5FA"
+                    },
+
+                    'steps': [
+                        {'range': [0, 100], 'color': "#3B82F6"},
+                        {'range': [100, 250], 'color': "#10B981"},
+                        {'range': [250, 500], 'color': "#F59E0B"},
+                    ]
+                }
+            ))
+
+            fig.update_layout(
+                height=350,
+                margin=dict(
+                    l=20,
+                    r=20,
+                    t=60,
+                    b=20
+                )
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+            # =====================================
+            # SUMMARY
+            # =====================================
+            st.markdown("### 📝 Prediction Summary")
+
+            st.write(f"""
+            - **Season:** {season_name}
+            - **Weather:** {weather_name}
+            - **Temperature:** {temp_c}°C
+            - **Humidity:** {hum_percent}%
+            - **Hour:** {hour}:00
+            """)
 
 # =========================================
 # DATASET EXPLORER
